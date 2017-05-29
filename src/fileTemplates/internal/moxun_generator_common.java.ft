@@ -2,7 +2,7 @@
 
 /**
  * Author: ${USER}
- * Created by: ModelGenerator on ${DATE}
+ * Created by: ModelGenerator on ${DATE} at ${TIME}
  */
 public class ${NAME} {
         }

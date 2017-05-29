@@ -26,6 +26,7 @@ public class JSONParser {
     private boolean isArrayToList = false;
     private boolean genGetter;
     private boolean genSetter;
+    private boolean genConstructor;
 
     public void reset(Project proj, PsiDirectory dir) {
         path.clear();
@@ -48,6 +49,13 @@ public class JSONParser {
         Iterator<String> keys = json.keys();
         JSONObject current = null;
         Object value;
+        StringBuilder constructor = new StringBuilder();
+        if(genConstructor){
+            constructor
+                    .append("public ")
+                    .append(path.peek())
+                    .append("(JSONObject obj) {\n");
+        }
         String key;
         String last = "";
         if (path.size() > 1) {
@@ -58,6 +66,9 @@ public class JSONParser {
             key = keys.next();
             value = json.get(key);
             key = ClassNameUtil.getName(key);
+            if(genConstructor){
+                constructor.append(getConstructorLineForParams(key, value));
+            }
             if (value instanceof JSONObject) {
                 String validName = ClassNameUtil.getName(suffixToUppercase(key));
                 String modifier = getModifier();
@@ -79,7 +90,7 @@ public class JSONParser {
             } else if (value instanceof JSONArray) {
                 JSONArray v = (JSONArray) value;
                 if (v.size() > 0 && !(v.get(0) instanceof JSONObject)) {
-                    Object firstValue = v.get(0);
+                    Object firstValue = v.get(0);//TODO if the first object not have all keys?
                     //处理基本数据类型数组和String数组
                     String field = getModifier() + getArrayType(decisionValueType(key, firstValue, true), isArrayToList) + " " + getKeyName(key) + ";\n";
                     append(field);
@@ -109,6 +120,10 @@ public class JSONParser {
             }
         }
 
+        if(genConstructor && constructor.length() > 0){
+            constructor.append("}");
+            appendConstructor(constructor.toString());
+        }
         Logger.info("Success to generating file " + path.peek() + ".java");
         if (!path.isEmpty()) {
             path.pop();
@@ -231,7 +246,42 @@ public class JSONParser {
         }
     }
 
+    private String getConstructorLineForParams(String key, Object value){
+        StringBuilder builder = new StringBuilder();
+        //TODO JSONObject and JSONArray
+        if(value instanceof JSONArray){
 
+        }else {
+            builder
+                    .append("this.")
+                    .append(ClassNameUtil.getKeyName(key))
+                    .append(" = ");
+            if(value instanceof JSONObject){
+                String validName = ClassNameUtil.getName(suffixToUppercase(key));
+                builder.append("new ");
+                builder.append(validName);
+                builder.append("(obj.optJSONObject(\"").append(key).append("\"));");
+            }else{
+                builder.append("obj.opt");
+                if (value instanceof Integer) {
+                    builder.append("Int");
+                } else if (value instanceof Long) {
+                    builder.append("Long");
+                } else if (value instanceof Double) {
+                    builder.append("Double");
+                } else if (value instanceof Boolean) {
+                    builder.append("Boolean");
+                } else if (value instanceof String) {
+                    builder.append("String");
+                }
+                builder.append("(\"")
+                        .append(key)
+                        .append("\");");
+            }
+            builder.append("\n");
+        }
+        return builder.toString();
+    }
 
     //正负整数,浮点数
     public boolean isNumeric(String str) {
@@ -242,6 +292,11 @@ public class JSONParser {
     private boolean isInteger(String str) {
         Pattern pattern = Pattern.compile("-?[0-9]+");
         return pattern.matcher(str).matches();
+    }
+
+    public void appendConstructor(String constructor)
+    {
+        engine.append(constructor, path.peek(), true);
     }
 
     public void append(String field) {
@@ -275,5 +330,9 @@ public class JSONParser {
     void setGenSetter(boolean genSetter) {
         this.genSetter = genSetter;
         engine.setGenSetter(genSetter);
+    }
+
+    public void setGenConstructor(boolean genConstructor) {
+        this.genConstructor = genConstructor;
     }
 }

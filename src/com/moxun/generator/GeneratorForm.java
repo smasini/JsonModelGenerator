@@ -48,6 +48,7 @@ public class GeneratorForm {
     private JTextField rootName;
     private JCheckBox generateGetterCheckBox;
     private JCheckBox generateSetterCheckBox;
+    private JCheckBox generateConstructorCheckBox;
 
     private Project project;
     private List<JTextField> textFields = new ArrayList<JTextField>();
@@ -174,6 +175,7 @@ public class GeneratorForm {
                     parser.setGenSample(generatorSampleCheckBox.isSelected());
                     parser.setGenGetter(generateGetterCheckBox.isSelected());
                     parser.setGenSetter(generateSetterCheckBox.isSelected());
+                    parser.setGenConstructor(generateConstructorCheckBox.isSelected());
                     String className = parser.decodeJSONObject(dist);
 
                     status.setText("Generating complete.");

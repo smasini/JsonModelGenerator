@@ -40,8 +40,11 @@ public class GeneratorEngine {
             inters = its.clone();
         }
     }
+    public void append(String s, String clsName){
+        append(s, clsName, false);
+    }
 
-    public void append(final String s, final String clsName) {
+    public void append(final String s, final String clsName, final boolean isConstructor) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -49,7 +52,13 @@ public class GeneratorEngine {
                     @Override
                     protected void run(@NotNull Result result) throws Throwable {
                         PsiClass dist = dataSet.get(clsName);
-                        if (s.startsWith("//")) {
+                        if(isConstructor){
+                            addImports(dist);
+                            PsiMethod voidConstructor = factory.createConstructor();
+                            dist.add(voidConstructor);
+                            PsiMethod constructor = factory.createMethodFromText(s, dist);
+                            dist.add(constructor);
+                        }else if (s.startsWith("//")) {
                             PsiElement comment = factory.createCommentFromText(s, dist);
                             dist.addBefore(comment, dist.getRBrace());
                         } else {
@@ -184,6 +193,23 @@ public class GeneratorEngine {
             return "0";
         } else {
             return "null";
+        }
+    }
+
+    private void addImports(PsiClass dist){
+        addImport(dist, "JSONObject");
+        addImport(dist, "JSONArray");
+    }
+
+    private void addImport(PsiClass dist, String className){
+        GlobalSearchScope searchScope = GlobalSearchScope.allScope(project);
+        PsiClass[] psiClasses = PsiShortNamesCache.getInstance(project).getClassesByName(className, searchScope);
+        for (PsiClass psiClass : psiClasses) {
+            if (psiClass.getQualifiedName().equals("org.json.JSONObject") || psiClass.getQualifiedName().equals("org.json.JSONArray")) {
+                PsiImportStatement importStatement = factory.createImportStatement(psiClass);
+                ((PsiJavaFile) dist.getContainingFile()).getImportList().add(importStatement);
+                break;
+            }
         }
     }
 
