@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
+import static com.moxun.generator.ClassNameUtil.getKeyName;
+import static com.moxun.generator.ClassNameUtil.suffixToUppercase;
+
 /**
  * Parsing json and generating code
  * Created by moxun on 15/12/9.
@@ -58,7 +61,7 @@ public class JSONParser {
             if (value instanceof JSONObject) {
                 String validName = ClassNameUtil.getName(suffixToUppercase(key));
                 String modifier = getModifier();
-                append(modifier + validName + " " + key + ";\n");
+                append(modifier + validName + " " + getKeyName(key) + ";\n");
                 push(validName);
                 current = (JSONObject) value;
                 if (current.keySet().size() > 0) {
@@ -78,14 +81,14 @@ public class JSONParser {
                 if (v.size() > 0 && !(v.get(0) instanceof JSONObject)) {
                     Object firstValue = v.get(0);
                     //处理基本数据类型数组和String数组
-                    String field = getModifier() + getArrayType(decisionValueType(key, firstValue, true), isArrayToList) + " " + key + ";\n";
+                    String field = getModifier() + getArrayType(decisionValueType(key, firstValue, true), isArrayToList) + " " + getKeyName(key) + ";\n";
                     append(field);
                 } else {
                     //处理对象数组
                     if (isArrayToList) {
-                        append(getModifier() + "List<" + suffixToUppercase(key) + "Item>" + key + ";\n");
+                        append(getModifier() + "List<" + suffixToUppercase(key) + "Item>" + getKeyName(key) + ";\n");
                     } else {
-                        append(getModifier() + suffixToUppercase(key) + "Item[] " + key + ";\n");
+                        append(getModifier() + suffixToUppercase(key) + "Item[] " + getKeyName(key) + ";\n");
                     }
                 }
                 push(suffixToUppercase(key));
@@ -93,7 +96,7 @@ public class JSONParser {
             } else {
                 //处理基本数据类型和String
                 String field = getModifier();
-                field += decisionValueType(key, value, false) + " " + key + ";";
+                field += decisionValueType(key, value, false) + " " + getKeyName(key) + ";";
                 if (needGenSample) {
                     String v = String.valueOf(value);
                     v = v.replaceAll("\n", "");
@@ -228,11 +231,7 @@ public class JSONParser {
         }
     }
 
-    public String suffixToUppercase(String s) {
-        StringBuilder sb = new StringBuilder(s);
-        sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
-        return sb.toString();
-    }
+
 
     //正负整数,浮点数
     public boolean isNumeric(String str) {

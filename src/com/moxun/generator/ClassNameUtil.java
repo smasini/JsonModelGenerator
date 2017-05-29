@@ -20,4 +20,27 @@ public class ClassNameUtil {
     }
 
 
+    public static String suffixToUppercase(String s) {
+        StringBuilder sb = new StringBuilder(s);
+        sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
+        return sb.toString();
+    }
+
+    public static String suffixToLower(String s) {
+        StringBuilder sb = new StringBuilder(s);
+        sb.setCharAt(0, Character.toLowerCase(sb.charAt(0)));
+        return sb.toString();
+    }
+
+    /**
+     *
+     * @param key
+     * @return key with first charachter in lower case
+     */
+    public static String getKeyName(String key){
+        if(key!=null && !key.isEmpty() && key.length() > 1){
+            return suffixToLower(key);
+        }
+        return "";
+    }
 }

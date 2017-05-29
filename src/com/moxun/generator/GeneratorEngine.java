@@ -53,7 +53,7 @@ public class GeneratorEngine {
                             PsiElement comment = factory.createCommentFromText(s, dist);
                             dist.addBefore(comment, dist.getRBrace());
                         } else {
-                            String r = s.replaceAll("-", "_");
+                            String r = ClassNameUtil.getKeyName(s.replaceAll("-", "_"));
                             PsiField field = factory.createFieldFromText(r, dist);
                             dist.add(field);
                             if (genGetter) {
