@@ -97,9 +97,9 @@ public class JSONParser {
                 } else {
                     //处理对象数组
                     if (isArrayToList) {
-                        append(getModifier() + "List<" + suffixToUppercase(key) + "Item>" + getKeyName(key) + ";\n");
+                        append(getModifier() + "List<" + getNameForClassArray(key) + ">" + getKeyName(key) + ";\n");
                     } else {
-                        append(getModifier() + suffixToUppercase(key) + "Item[] " + getKeyName(key) + ";\n");
+                        append(getModifier() + getNameForClassArray(key) + "[] " + getKeyName(key) + ";\n");
                     }
                 }
                 push(suffixToUppercase(key));
@@ -248,14 +248,94 @@ public class JSONParser {
 
     private String getConstructorLineForParams(String key, Object value){
         StringBuilder builder = new StringBuilder();
-        //TODO JSONObject and JSONArray
+        builder.append("this.")
+                .append(ClassNameUtil.getKeyName(key))
+                .append(" = ");
         if(value instanceof JSONArray){
+            JSONArray v = (JSONArray) value;
+            if (v.size() > 0) {
+                String arrayName = "jArray" + getKeyName(key);
+                String objName = "jsonObject" + getKeyName(key);
+                Object val = v.get(0);
+                if (isArrayToList) {
+                    builder.append("new ArrayList<>();\n");
+                    builder.append("JSONArray ")
+                            .append(arrayName)
+                            .append(" = obj.optJSONArray(\"")
+                            .append(key)
+                            .append("\");")
+                            .append("if(")
+                            .append(arrayName)
+                            .append(" != null){")
+                            .append("for(int i = 0; i < ")
+                            .append(arrayName)
+                            .append(".length();i++){");
+                    if(val instanceof JSONObject) {
+                        builder.append("JSONObject ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optJSONObject(i);")
+                                .append("if(")
+                                .append(objName)
+                                .append(" != null){");
+                    }else if(val instanceof Integer){
+                        builder.append("int ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optInt(i);");
+                    }else if(val instanceof Long){
+                        builder.append("long ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optLong(i);");
+                    }else if(val instanceof Double){
+                        builder.append("double ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optDouble(i);");
+                    }else if(val instanceof Boolean){
+                        builder.append("boolean ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optBoolean(i);");
+                    }else if(val instanceof String){
+                        builder.append("String ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optString(i);");
+                    }
+                    builder.append("this.")
+                            .append(getKeyName(key))
+                            .append(".add(");
+                    if(val instanceof JSONObject){
+                        builder.append("new ")
+                                .append(getNameForClassArray(key))
+                                .append("(");
+                    }
 
+                    builder.append(objName);
+                    if(val instanceof JSONObject){
+                        builder.append(")");
+                    }
+                    builder.append(");");
+                    if(val instanceof JSONObject){
+                        builder.append("}");
+                    }
+                    builder.append("}}\n");
+                } else {
+                    //TODO
+                   // builder.append(new )
+                  //  append(getModifier() + suffixToUppercase(key) + "Item[] " + getKeyName(key) + ";\n");
+                }
+
+            }
         }else {
-            builder
-                    .append("this.")
-                    .append(ClassNameUtil.getKeyName(key))
-                    .append(" = ");
             if(value instanceof JSONObject){
                 String validName = ClassNameUtil.getName(suffixToUppercase(key));
                 builder.append("new ");
@@ -281,6 +361,12 @@ public class JSONParser {
             builder.append("\n");
         }
         return builder.toString();
+    }
+
+    private String getNameForClassArray(String key){
+        String name = suffixToUppercase(key);
+        //TODO generate name in singolar
+        return ClassNameUtil.getName(name + "Item");
     }
 
     //正负整数,浮点数

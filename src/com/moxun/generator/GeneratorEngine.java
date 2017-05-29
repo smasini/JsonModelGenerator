@@ -26,6 +26,7 @@ public class GeneratorEngine {
     private String[] inters;
     private boolean genGetter;
     private boolean genSetter;
+    private boolean jsonObjectAdded, jsonArrayAdded, listAdded, arrayListAdded;
 
     public GeneratorEngine(Project proj, PsiDirectory dir) {
         dataSet.clear();
@@ -52,8 +53,8 @@ public class GeneratorEngine {
                     @Override
                     protected void run(@NotNull Result result) throws Throwable {
                         PsiClass dist = dataSet.get(clsName);
+                        addImports(dist, s);
                         if(isConstructor){
-                            addImports(dist);
                             PsiMethod voidConstructor = factory.createConstructor();
                             dist.add(voidConstructor);
                             PsiMethod constructor = factory.createMethodFromText(s, dist);
@@ -74,38 +75,9 @@ public class GeneratorEngine {
                                 dist.add(setter);
                             }
                         }
-
-                        if (s.contains("public List<")) {
-                            PsiImportStatement[] imports = ((PsiJavaFile) dist.getContainingFile()).getImportList().getImportStatements();
-                            if (imports != null) {
-                                boolean isAdded = false;
-                                for (PsiImportStatement importStatement : imports) {
-                                    if (importStatement.getQualifiedName().equals("java.util.List")) {
-                                        isAdded = true;
-                                    }
-                                }
-                                if (!isAdded) {
-                                    GlobalSearchScope searchScope = GlobalSearchScope.allScope(project);
-                                    PsiClass[] psiClasses = PsiShortNamesCache.getInstance(project).getClassesByName("List", searchScope);
-                                    for (PsiClass psiClass : psiClasses) {
-                                        if (psiClass.getQualifiedName().equals("java.util.List")) {
-                                            PsiImportStatement importStatement = factory.createImportStatement(psiClass);
-                                            ((PsiJavaFile) dist.getContainingFile()).getImportList().add(importStatement);
-                                            break;
-                                        }
-                                    }
-                                }
-                            } else {
-                                GlobalSearchScope searchScope = GlobalSearchScope.allScope(project);
-                                PsiClass[] psiClasses = PsiShortNamesCache.getInstance(project).getClassesByName("List", searchScope);
-                                for (PsiClass psiClass : psiClasses) {
-                                    if (psiClass.getQualifiedName().equals("java.util.List")) {
-                                        PsiImportStatement importStatement = factory.createImportStatement(psiClass);
-                                        ((PsiJavaFile) dist.getContainingFile()).getImportList().add(importStatement);
-                                        break;
-                                    }
-                                }
-                            }
+                        if(!jsonObjectAdded && s.contains("JSONObject")){
+                            addImport(dist, "JSONObject", "org.json.JSONObject");
+                            jsonObjectAdded = true;
                         }
                     }
                 }.execute();
@@ -196,16 +168,30 @@ public class GeneratorEngine {
         }
     }
 
-    private void addImports(PsiClass dist){
-        addImport(dist, "JSONObject");
-        addImport(dist, "JSONArray");
+    private void addImports(PsiClass dist, String s){
+        if(!jsonObjectAdded && s.contains("JSONObject")){
+            addImport(dist, "JSONObject", "org.json.JSONObject");
+            jsonObjectAdded = true;
+        }
+        if(!jsonArrayAdded && s.contains("JSONArray")){
+            addImport(dist, "JSONArray", "org.json.JSONArray");
+            jsonArrayAdded = true;
+        }
+        if(!listAdded && s.contains("List")){
+            addImport(dist, "List", "java.util.List");
+            listAdded = true;
+        }
+        if(!arrayListAdded && s.contains("ArrayList")){
+            addImport(dist, "ArrayList", "java.util.ArrayList");
+            arrayListAdded = true;
+        }
     }
 
-    private void addImport(PsiClass dist, String className){
+    private void addImport(PsiClass dist, String className, String packageName){
         GlobalSearchScope searchScope = GlobalSearchScope.allScope(project);
         PsiClass[] psiClasses = PsiShortNamesCache.getInstance(project).getClassesByName(className, searchScope);
         for (PsiClass psiClass : psiClasses) {
-            if (psiClass.getQualifiedName().equals("org.json.JSONObject") || psiClass.getQualifiedName().equals("org.json.JSONArray")) {
+            if (psiClass.getQualifiedName().equals(packageName)) {
                 PsiImportStatement importStatement = factory.createImportStatement(psiClass);
                 ((PsiJavaFile) dist.getContainingFile()).getImportList().add(importStatement);
                 break;
