@@ -26,12 +26,16 @@ public class GeneratorEngine {
     private String[] inters;
     private boolean genGetter;
     private boolean genSetter;
-    private boolean jsonObjectAdded, jsonArrayAdded, listAdded, arrayListAdded;
+    private HashMap<String, Boolean> jsonObjectAdded, jsonArrayAdded, listAdded, arrayListAdded;
 
     public GeneratorEngine(Project proj, PsiDirectory dir) {
         dataSet.clear();
         project = proj;
         directory = dir;
+        jsonObjectAdded = new HashMap<>();
+        jsonArrayAdded = new HashMap<>();
+        listAdded = new HashMap<>();
+        arrayListAdded = new HashMap<>();
         factory = JavaPsiFacade.getInstance(project).getElementFactory();
     }
 
@@ -74,10 +78,6 @@ public class GeneratorEngine {
                                 PsiMethod setter = GenerateMembersUtil.generateSetterPrototype(field);
                                 dist.add(setter);
                             }
-                        }
-                        if(!jsonObjectAdded && s.contains("JSONObject")){
-                            addImport(dist, "JSONObject", "org.json.JSONObject");
-                            jsonObjectAdded = true;
                         }
                     }
                 }.execute();
@@ -169,21 +169,35 @@ public class GeneratorEngine {
     }
 
     private void addImports(PsiClass dist, String s){
-        if(!jsonObjectAdded && s.contains("JSONObject")){
+        //set default to false if not exists
+        if(!jsonObjectAdded.keySet().contains(dist.getName())){
+            jsonObjectAdded.put(dist.getName(), false);
+        }
+        if(!jsonArrayAdded.keySet().contains(dist.getName())){
+            jsonArrayAdded.put(dist.getName(), false);
+        }
+        if(!listAdded.keySet().contains(dist.getName())){
+            listAdded.put(dist.getName(), false);
+        }
+        if(!arrayListAdded.keySet().contains(dist.getName())){
+            arrayListAdded.put(dist.getName(), false);
+        }
+
+        if(!jsonObjectAdded.get(dist.getName())  && s.contains("JSONObject")){
             addImport(dist, "JSONObject", "org.json.JSONObject");
-            jsonObjectAdded = true;
+            jsonObjectAdded.put(dist.getName(), true);
         }
-        if(!jsonArrayAdded && s.contains("JSONArray")){
+        if(!jsonArrayAdded.get(dist.getName()) && s.contains("JSONArray")){
             addImport(dist, "JSONArray", "org.json.JSONArray");
-            jsonArrayAdded = true;
+            jsonArrayAdded.put(dist.getName(), true);
         }
-        if(!listAdded && s.contains("List")){
+        if(!listAdded.get(dist.getName()) && s.contains("List")){
             addImport(dist, "List", "java.util.List");
-            listAdded = true;
+            listAdded.put(dist.getName(), true);
         }
-        if(!arrayListAdded && s.contains("ArrayList")){
+        if(!arrayListAdded.get(dist.getName()) && s.contains("ArrayList")){
             addImport(dist, "ArrayList", "java.util.ArrayList");
-            arrayListAdded = true;
+            arrayListAdded.put(dist.getName(), true);
         }
     }
 
@@ -206,4 +220,5 @@ public class GeneratorEngine {
     void setGenSetter(boolean genSetter) {
         this.genSetter = genSetter;
     }
+
 }

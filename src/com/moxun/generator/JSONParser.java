@@ -90,7 +90,7 @@ public class JSONParser {
             } else if (value instanceof JSONArray) {
                 JSONArray v = (JSONArray) value;
                 if (v.size() > 0 && !(v.get(0) instanceof JSONObject)) {
-                    Object firstValue = v.get(0);//TODO if the first object not have all keys?
+                    Object firstValue = v.get(0);
                     //处理基本数据类型数组和String数组
                     String field = getModifier() + getArrayType(decisionValueType(key, firstValue, true), isArrayToList) + " " + getKeyName(key) + ";\n";
                     append(field);
@@ -214,31 +214,30 @@ public class JSONParser {
     }
 
     public void decodeJSONArray(JSONArray jsonArray) {
-
-        //        //是否需要遍历？
-        //        for (item in jsonArray) {
-        //            if (item instanceof JSONObject) {
-        //                push(path.peek() + "Item")
-        //                decodeJSONObject(item)
-        //            } else if (item instanceof JSONArray) {
-        //                push("array" + index + "->")
-        //                decodeJSONArray(item)
-        //            } else {
-        //
-        //            }
-        //        }
-
-        //数组选择其中一个元素出来进行解析就OK
+        //TODO creare un oggetto con valori totali?
         Object item = jsonArray.get(0);
         if (item instanceof JSONObject) {
-            push(path.peek() + "Item");
-            decodeJSONObject((JSONObject) item);
+            push(getNameForClassArray(path.peek()));
+            JSONObject obj = new JSONObject();
+            for(int i = 0; i < jsonArray.size(); i++){
+                JSONObject objTmp = jsonArray.optJSONObject(i);
+                if(objTmp!=null){
+                    Iterator<String> keys = objTmp.keys();
+                    while (keys.hasNext()){
+                        String key = keys.next();
+                        if(!obj.has(key) || obj.get(key) == null){
+                            Object o = objTmp.get(key);
+                            obj.put(key, o);
+                        }
+                    }
+                }
+            }
+            append("//" + obj.toString());
+            decodeJSONObject(obj);
         } else if (item instanceof JSONArray) {
             //多维数组我选择狗带
-            push(path.peek() + "Item");
+            push(getNameForClassArray(path.peek()));
             decodeJSONArray((JSONArray) item);
-        } else {
-
         }
 
         if (!path.isEmpty()) {
@@ -254,8 +253,8 @@ public class JSONParser {
         if(value instanceof JSONArray){
             JSONArray v = (JSONArray) value;
             if (v.size() > 0) {
-                String arrayName = "jArray" + getKeyName(key);
-                String objName = "jsonObject" + getKeyName(key);
+                String arrayName = "jsonArray" + suffixToUppercase(key);
+                String objName = "jsonObject" + suffixToUppercase(key);
                 Object val = v.get(0);
                 if (isArrayToList) {
                     builder.append("new ArrayList<>();\n");
@@ -329,7 +328,7 @@ public class JSONParser {
                     }
                     builder.append("}}\n");
                 } else {
-                    //TODO
+                    //TODO handle simple array
                    // builder.append(new )
                   //  append(getModifier() + suffixToUppercase(key) + "Item[] " + getKeyName(key) + ";\n");
                 }
@@ -364,9 +363,9 @@ public class JSONParser {
     }
 
     private String getNameForClassArray(String key){
-        String name = suffixToUppercase(key);
+        String name = suffixToUppercase(ClassNameUtil.fromPlural(key));
         //TODO generate name in singolar
-        return ClassNameUtil.getName(name + "Item");
+        return ClassNameUtil.getName(name);
     }
 
     //正负整数,浮点数
