@@ -214,7 +214,6 @@ public class JSONParser {
     }
 
     public void decodeJSONArray(JSONArray jsonArray) {
-        //TODO creare un oggetto con valori totali?
         Object item = jsonArray.get(0);
         if (item instanceof JSONObject) {
             push(getNameForClassArray(path.peek()));
@@ -225,14 +224,17 @@ public class JSONParser {
                     Iterator<String> keys = objTmp.keys();
                     while (keys.hasNext()){
                         String key = keys.next();
-                        if(!obj.has(key) || obj.get(key) == null){
-                            Object o = objTmp.get(key);
-                            obj.put(key, o);
+                        if(!obj.has(key) || obj.opt(key) == null){
+                            Object o = objTmp.opt(key);
+                            if(!o.toString().equals("null")) {
+                                obj.put(key, o);
+                            }else{
+                                obj.put(key, null);
+                            }
                         }
                     }
                 }
             }
-            append("//" + obj.toString());
             decodeJSONObject(obj);
         } else if (item instanceof JSONArray) {
             //多维数组我选择狗带

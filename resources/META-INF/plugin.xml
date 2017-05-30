@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>com.moxun.generetor</id>
   <name>JSON Model Generator</name>
-  <version>0.5.1.22</version>
+  <version>0.5.1.28</version>
   <vendor email="furmint@foxmail.com">moxun</vendor>
 
   <description><![CDATA[
