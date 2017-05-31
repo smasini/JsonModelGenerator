@@ -57,11 +57,7 @@ public class JSONParser {
                     .append("(JSONObject obj) {\n");
         }
         String key;
-        String last = "";
-        if (path.size() > 1) {
-            last = path.get(path.size() - 2);
-        }
-        className = engine.preGen(path.peek(), last);
+        className = createClass();
         while (keys.hasNext()) {
             key = keys.next();
             value = json.get(key);
@@ -91,8 +87,7 @@ public class JSONParser {
                 JSONArray v = (JSONArray) value;
                 if (v.size() > 0 && !(v.get(0) instanceof JSONObject)) {
                     Object firstValue = v.get(0);
-                    //处理基本数据类型数组和String数组
-                    String field = getModifier() + getArrayType(decisionValueType(key, firstValue, true), isArrayToList) + " " + getKeyName(key) + ";\n";
+                    String field = getModifier() + getArrayType(getNameForArrayModel(key, firstValue), isArrayToList) + " " + getKeyName(key) + ";\n";
                     append(field);
                 } else {
                     //处理对象数组
@@ -102,7 +97,9 @@ public class JSONParser {
                         append(getModifier() + getNameForClassArray(key) + "[] " + getKeyName(key) + ";\n");
                     }
                 }
-                push(suffixToUppercase(key));
+                if(v.size() > 0 && !(v.get(0) instanceof JSONArray)) {
+                    push(suffixToUppercase(key));
+                }
                 decodeJSONArray((JSONArray) value);
             } else {
                 //处理基本数据类型和String
@@ -137,6 +134,15 @@ public class JSONParser {
         } else {
             return "private ";
         }
+    }
+
+    private String getNameForArrayModel(String key, Object value){
+        if(value instanceof JSONArray){
+            String validName = ClassNameUtil.getName(suffixToUppercase(key + "List"));
+            push(validName);
+            return validName;
+        }
+        return decisionValueType(key, value, true);
     }
 
     private String decisionValueType(/*not uesd*/String key, Object value, boolean formArray) {
@@ -213,6 +219,14 @@ public class JSONParser {
         }
     }
 
+    private String createClass(){
+        String last = "";
+        if (path.size() > 1) {
+            last = path.get(path.size() - 2);
+        }
+        return engine.preGen(path.peek(), last);
+    }
+
     public void decodeJSONArray(JSONArray jsonArray) {
         Object item = jsonArray.get(0);
         if (item instanceof JSONObject) {
@@ -237,9 +251,63 @@ public class JSONParser {
             }
             decodeJSONObject(obj);
         } else if (item instanceof JSONArray) {
-            //多维数组我选择狗带
-            push(getNameForClassArray(path.peek()));
-            decodeJSONArray((JSONArray) item);
+            String className = createClass();
+            //classe creata <key>List
+            String internalValidName = ClassNameUtil.getName(suffixToUppercase(className + "Item"));
+            String listName = getKeyName(internalValidName);
+            Object firstValue = ((JSONArray) item).get(0);
+            //creo la classe interna
+            if(firstValue instanceof JSONArray){
+                decodeJSONArray((JSONArray) ((JSONArray) item).get(0));
+            }
+            else if(firstValue instanceof JSONObject){
+                push(internalValidName);
+                decodeJSONObject(((JSONArray) item).optJSONObject(0));
+                String field = getModifier() + getArrayType(internalValidName, isArrayToList) + " " + listName + ";\n";
+                append(field);
+            }else{
+                String field = getModifier() + getArrayType(decisionValueType(null, firstValue, true), isArrayToList) + " " + listName + ";\n";
+                append(field);
+            }
+            //constructor with JSONArray
+            StringBuilder constructor = new StringBuilder();
+            if(genConstructor){
+                constructor.append("public ")
+                        .append(path.peek())
+                        .append("(JSONArray array) {\n")
+                        .append("this.")
+                        .append(listName)
+                        .append(" = new ArrayList<>();")
+                        .append("for(int i = 0; i < array.lenght(); i++){")
+                        .append(listName)
+                        .append(".add(");
+
+                if(firstValue instanceof JSONObject){
+                    constructor.append("new ")
+                            .append(className)
+                            .append("(array.optJSONObject(i))");
+                }else{
+                    constructor.append("array.opt");
+                    if(firstValue instanceof Integer){
+                        constructor.append("Int");
+                    }else if (firstValue instanceof Long) {
+                        constructor.append("Long");
+                    } else if (firstValue instanceof Double) {
+                        constructor.append("Double");
+                    } else if (firstValue instanceof Boolean) {
+                        constructor.append("Boolean");
+                    }else{
+                        constructor.append("String");
+                    }
+                    constructor.append("(i)");
+                }
+                constructor.append(");")
+                        .append("}")//close for
+                        .append("}");//close constructor
+                appendConstructor(constructor.toString());
+            }
+            //push(internalValidName);
+            //decodeJSONArray((JSONArray) item);
         }
 
         if (!path.isEmpty()) {
@@ -271,7 +339,17 @@ public class JSONParser {
                             .append("for(int i = 0; i < ")
                             .append(arrayName)
                             .append(".length();i++){");
-                    if(val instanceof JSONObject) {
+                    if(val instanceof JSONArray){
+                        builder.append("JSONArray ")
+                                .append(objName)
+                                .append(" = ")
+                                .append(arrayName)
+                                .append(".optJSONArray(i);")
+                                .append("if(")
+                                .append(objName)
+                                .append(" != null){");
+                    }
+                    else if(val instanceof JSONObject) {
                         builder.append("JSONObject ")
                                 .append(objName)
                                 .append(" = ")
@@ -314,7 +392,12 @@ public class JSONParser {
                     builder.append("this.")
                             .append(getKeyName(key))
                             .append(".add(");
-                    if(val instanceof JSONObject){
+                    if(val instanceof JSONArray){
+                        builder.append("new ")
+                                .append(ClassNameUtil.getName(suffixToUppercase(key + "List")))//TODO devo prendere il nome della classe corretto quindi dalla key aggiungo List
+                                .append("(");
+                    }
+                    else if(val instanceof JSONObject){
                         builder.append("new ")
                                 .append(getNameForClassArray(key))
                                 .append("(");
@@ -325,7 +408,7 @@ public class JSONParser {
                         builder.append(")");
                     }
                     builder.append(");");
-                    if(val instanceof JSONObject){
+                    if(val instanceof JSONObject || val instanceof JSONArray){
                         builder.append("}");
                     }
                     builder.append("}}\n");
