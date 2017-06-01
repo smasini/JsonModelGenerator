@@ -1,10 +1,12 @@
-<idea-plugin version="2">
-  <id>com.moxun.generetor</id>
+<idea-plugin>
+  <id>it.smasini.json-model-generator</id>
   <name>JSON Model Generator</name>
-  <version>0.5.1.28</version>
-  <vendor email="furmint@foxmail.com">moxun</vendor>
+  <version>0.6</version>
+  <vendor email="simone.masini92@gmail.com">Simone Masini</vendor>
 
   <description><![CDATA[
+      Forked from <a href="https://github.com/misakuo/JsonModelGenerator">misakuo Github</a><br>
+
       Tool to covert JSON string to Java class.<br>
       <br>
       * Support get JSON string from URL or user's input.<br>
@@ -12,13 +14,12 @@
       * Support auto implementation Java interface.<br>
       * Support generate getter and setter.<br>
       * Support field type inference.<br><br>
-      <a href="https://github.com/misakuo/JsonModelGenerator">Sourcecode and Tutorial</a><br>
-      <a href="https://github.com/misakuo/JsonModelGenerator/issues">Bug report</a><br>
-      <br>Hope you enjoy it :)<br><br>
-
+      <a href="https://github.com/smasini/JsonModelGenerator">Sourcecode</a><br>
     ]]></description>
 
   <change-notes><![CDATA[
+      <b>0.6.0</b><br>
+      Generate constructor
       <b>0.5.0</b><br>
       Support generate getter and setter;<br>
       <b>0.4.5</b><br>
@@ -74,8 +75,8 @@
 
   <actions>
     <!-- Add your actions here -->
-    <action class="com.moxun.generator.Generator" id="moxun.generator" text="JSON Model Generator"
-            description="Tool for convert JSON string to Java class." icon="/icons/icon.png">
+    <action class="com.moxun.generator.Generator" id="json.model.generator" text="JSON Model Generator"
+            description="Tool for convert JSON string to Java class." icon="/icons/curly-brackets.png">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
       <add-to-group group-id="MainToolBar" anchor="last"/>
     </action>
